@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Document Approval Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-auth-compat.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-firestore-compat.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/emailjs-com@3/dist/email.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+
+    h2 {
+      color: #555;
+      margin-bottom: 20px;
+      font-size: 20px;
+      border-bottom: 2px solid #667eea;
+      padding-bottom: 10px;
+    }
+
+    .auth-section {
+      text-align: center;
+    }
+
+    input[type="email"],
+    input[type="password"],
+    input[type="text"] {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.1s;
+      margin: 5px;
+    }
+
+    button:hover {
+      background: #5568d3;
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .upload-area {
+      border: 2px dashed #667eea;
+      border-radius: 8px;
+      padding: 30px;
+      text-align: center;
+      margin: 20px 0;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .upload-area:hover {
+      background: #f8f9ff;
+    }
+
+    .upload-area.dragover {
+      background: #e8ebff;
+      border-color: #5568d3;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      margin-left: 10px;
+    }
+
+    .status-draft {
+      background: #e0e0e0;
+      color: #666;
+    }
+
+    .status-pending {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .status-approved {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .status-rejected {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .submission-list {
+      margin-top: 20px;
+    }
+
+    .submission-item {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      border-left: 4px solid #667eea;
+    }
+
+    .submission-title {
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 5px;
+    }
+
+    .submission-meta {
+      font-size: 12px;
+      color: #666;
+    }
+
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 12px;
+      border-radius: 6px;
+      margin: 10px 0;
+      border-left: 4px solid #f5c6cb;
+    }
+
+    .success {
+      background: #d4edda;
+      color: #155724;
+      padding: 12px;
+      border-radius: 6px;
+      margin: 10px 0;
+      border-left: 4px solid #c3e6cb;
+    }
+
+    .info {
+      background: #d1ecf1;
+      color: #0c5460;
+      padding: 12px;
+      border-radius: 6px;
+      margin: 10px 0;
+      border-left: 4px solid #bee5eb;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .user-info {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+
+    .preview-section {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+
+    .preview-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 10px;
+    }
+
+    .preview-body {
+      color: #666;
+      line-height: 1.6;
+      white-space: pre-wrap;
+    }
+
+    .manager-email-section {
+      background: #d1ecf1;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+    }
+
+    .approval-page {
+      text-align: center;
+      padding: 40px 20px;
+    }
+
+    .approval-icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+    }
+
+    .loader {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .email-setup-notice {
+      background: #fff3cd;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+      border-left: 4px solid #ffc107;
+    }
+
+    .template-section {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 10px 0;
+      font-family: monospace;
+      font-size: 12px;
+    }
+
+    .copy-button {
+      background: #28a745;
+      padding: 6px 12px;
+      font-size: 12px;
+      margin-top: 10px;
+    }
+
+    .copy-button:hover {
+      background: #218838;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Authentication Section -->
+    <div id="authSection" class="card">
+      <div class="auth-section">
+        <h1>📄 Document Approval System</h1>
+        <p style="margin: 20px 0; color: #666;">Sign in to submit documents for approval</p>
+        <input type="email" id="authEmail" placeholder="Email address" />
+        <input type="password" id="authPassword" placeholder="Password" />
+        <div>
+          <button onclick="app.signIn()">Sign In</button>
+          <button onclick="app.signUp()">Sign Up</button>
+        </div>
+        <div id="authError"></div>
+      </div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <div id="dashboardSection" class="card hidden">
+      <div class="user-info">
+        <div>
+          <h1>📄 Document Dashboard</h1>
+          <p style="color: #666; margin-top: 5px;">Welcome, <span id="userEmail"></span></p>
+        </div>
+        <button onclick="app.signOut()">Sign Out</button>
+      </div>
+
+      <!-- EmailJS Configuration (Hidden - Pre-configured) -->
+      <input type="hidden" id="emailServiceId" value="service_ui0p02j" />
+      <input type="hidden" id="emailTemplateId" value="template_iwro53x" />
+
+      <!-- Manager Email Configuration -->
+      <div class="manager-email-section">
+        <label style="font-weight: 600; color: #0c5460; display: block; margin-bottom: 8px;">
+          Manager Email Address:
+        </label>
+        <input type="email" id="managerEmail" placeholder="manager@company.com" 
+               style="margin: 0;" />
+        <p style="font-size: 12px; color: #0c5460; margin-top: 8px;">
+          ℹ️ The manager will receive an email with approve/reject links
+        </p>
+        
+      </div>
+
+      <!-- Upload Section -->
+      <div>
+        <h2>Upload Document</h2>
+        <div class="upload-area" id="uploadArea" onclick="document.getElementById('fileInput').click()">
+          <p style="font-size: 16px; margin-bottom: 10px;">📎 Click or drag file here</p>
+          <p style="font-size: 12px; color: #666;">Accepted formats: .docx, .txt, .md</p>
+          <input type="file" id="fileInput" class="file-input" accept=".docx,.txt,.md" 
+                 onchange="app.handleFileSelect(event)" />
+        </div>
+        <div id="uploadStatus"></div>
+
+        <!-- Preview Section -->
+        <div id="previewSection" class="hidden preview-section">
+          <div class="preview-title" id="previewTitle"></div>
+          <div class="preview-body" id="previewBody"></div>
+          <div style="margin-top: 15px;">
+            <button onclick="app.submitForApproval()">Submit for Approval</button>
+            <button onclick="app.clearPreview()" style="background: #6c757d;">Clear</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Submissions List -->
+      <div style="margin-top: 30px;">
+        <h2>My Submissions</h2>
+        <div id="submissionsList"></div>
+      </div>
+    </div>
+
+    <!-- Approval Action Page -->
+    <div id="approvalSection" class="card hidden">
+      <div class="approval-page">
+        <div class="approval-icon">⏳</div>
+        <h2>Processing Approval...</h2>
+        <div class="loader"></div>
+        <div id="approvalResult"></div>
+      </div>
+    </div>
+
+
+  <script>
+    // Initialize EmailJS
+    emailjs.init("GvH9iilO0RUT1NsZ5");
+
+    // Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBwJK7Y_gtEYXNI0Ntm3P0ockh_c5sSizs",
+      authDomain: "portfolio-c2803.firebaseapp.com",
+      projectId: "portfolio-c2803",
+      storageBucket: "portfolio-c2803.firebasestorage.app",
+      messagingSenderId: "891551375739",
+      appId: "1:891551375739:web:9acc9d36d076263736ddde",
+      measurementId: "G-3S06FWVC8T"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // Document Parser Class
+    class DocumentParser {
+      static isImageUrl(line) {
+        const trimmed = line.trim();
+        return trimmed.startsWith('http://') || 
+               trimmed.startsWith('https://') ||
+               /\.(jpg|jpeg|png|gif|webp)$/i.test(trimmed);
+      }
+
+      static parse(content) {
+        const lines = content.split('\n').filter(l => l.trim());
+        
+        if (lines.length === 0) {
+          throw new Error('Document is empty');
+        }
+
+        let title = '';
+        let body = '';
+        let imageUrl = null;
+        let startIndex = 0;
+
+        // Check if first line is an image URL
+        if (this.isImageUrl(lines[0])) {
+          imageUrl = lines[0].trim();
+          startIndex = 1;
+          
+          if (lines.length < 2) {
+            throw new Error('Document must have a title');
+          }
+          
+          title = lines[1].trim();
+          startIndex = 2;
+        } else {
+          title = lines[0].trim();
+          startIndex = 1;
+        }
+
+        if (!title) {
+          throw new Error('Title is required');
+        }
+
+        body = lines.slice(startIndex).join('\n').trim();
+        
+        if (!body) {
+          throw new Error('Document body is required');
+        }
+
+        return { title, body, imageUrl };
+      }
+    }
+
+    // Main Application
+    const app = {
+      currentUser: null,
+      currentDocument: null,
+
+      init() {
+        this.setupEventListeners();
+        this.checkUrlForApproval();
+        
+        auth.onAuthStateChanged(user => {
+          this.currentUser = user;
+          if (user) {
+            this.showDashboard();
+            this.loadSubmissions();
+          } else {
+            this.showAuth();
+          }
+        });
+      },
+
+      setupEventListeners() {
+        const uploadArea = document.getElementById('uploadArea');
+        
+        uploadArea.addEventListener('dragover', (e) => {
+          e.preventDefault();
+          uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+          uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+          e.preventDefault();
+          uploadArea.classList.remove('dragover');
+          const file = e.dataTransfer.files[0];
+          if (file) {
+            this.processFile(file);
+          }
+        });
+      },
+
+      checkUrlForApproval() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const postId = urlParams.get('post_id');
+        const action = urlParams.get('action');
+
+        if (postId && (action === 'approve' || action === 'reject')) {
+          this.handleApprovalAction(postId, action);
+        }
+      },
+
+      async handleApprovalAction(postId, action) {
+        document.getElementById('authSection').classList.add('hidden');
+        document.getElementById('dashboardSection').classList.add('hidden');
+        document.getElementById('approvalSection').classList.remove('hidden');
+
+        try {
+          const status = action === 'approve' ? 'approved' : 'rejected';
+          await db.collection('submissions').doc(postId).update({
+            status: status,
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+
+          const icon = action === 'approve' ? '✅' : '❌';
+          const message = action === 'approve' ? 'Document Approved' : 'Document Rejected';
+          const color = action === 'approve' ? '#155724' : '#721c24';
+
+          document.querySelector('.approval-icon').textContent = icon;
+          document.querySelector('.approval-page h2').textContent = message;
+          document.querySelector('.approval-page h2').style.color = color;
+          document.querySelector('.loader').style.display = 'none';
+
+          document.getElementById('approvalResult').innerHTML = `
+            <div class="${action === 'approve' ? 'success' : 'error'}">
+              Status updated successfully! The submitter will see this update in their dashboard.
+            </div>
+            <p style="margin-top: 20px;">
+              <a href="${window.location.origin}${window.location.pathname}" 
+                 style="color: #667eea; text-decoration: none; font-weight: 600;">
+                ← Return to Dashboard
+              </a>
+            </p>
+          `;
+        } catch (error) {
+          document.querySelector('.loader').style.display = 'none';
+          document.getElementById('approvalResult').innerHTML = `
+            <div class="error">Error: ${error.message}</div>
+          `;
+        }
+      },
+
+      showAuth() {
+        document.getElementById('authSection').classList.remove('hidden');
+        document.getElementById('dashboardSection').classList.add('hidden');
+        document.getElementById('approvalSection').classList.add('hidden');
+      },
+
+      showDashboard() {
+        document.getElementById('authSection').classList.add('hidden');
+        document.getElementById('dashboardSection').classList.remove('hidden');
+        document.getElementById('approvalSection').classList.add('hidden');
+        document.getElementById('userEmail').textContent = this.currentUser.email;
+      },
+
+      async signIn() {
+        const email = document.getElementById('authEmail').value;
+        const password = document.getElementById('authPassword').value;
+        
+        try {
+          await auth.signInWithEmailAndPassword(email, password);
+          document.getElementById('authError').innerHTML = '';
+        } catch (error) {
+          document.getElementById('authError').innerHTML = 
+            `<div class="error">${error.message}</div>`;
+        }
+      },
+
+      async signUp() {
+        const email = document.getElementById('authEmail').value;
+        const password = document.getElementById('authPassword').value;
+        
+        try {
+          await auth.createUserWithEmailAndPassword(email, password);
+          document.getElementById('authError').innerHTML = 
+            `<div class="success">Account created successfully!</div>`;
+        } catch (error) {
+          document.getElementById('authError').innerHTML = 
+            `<div class="error">${error.message}</div>`;
+        }
+      },
+
+      async signOut() {
+        await auth.signOut();
+      },
+
+      handleFileSelect(event) {
+        const file = event.target.files[0];
+        if (file) {
+          this.processFile(file);
+        }
+      },
+
+      async processFile(file) {
+        const statusDiv = document.getElementById('uploadStatus');
+        const validExtensions = ['.docx', '.txt', '.md'];
+        const fileExt = '.' + file.name.split('.').pop().toLowerCase();
+
+        if (!validExtensions.includes(fileExt)) {
+          statusDiv.innerHTML = '<div class="error">Invalid file type. Please upload .docx, .txt, or .md files.</div>';
+          return;
+        }
+
+        statusDiv.innerHTML = '<div class="info">Processing document...</div>';
+
+        try {
+          let content = '';
+
+          if (fileExt === '.docx') {
+            const arrayBuffer = await file.arrayBuffer();
+            const result = await mammoth.extractRawText({ arrayBuffer });
+            content = result.value;
+          } else {
+            content = await file.text();
+          }
+
+          const parsed = DocumentParser.parse(content);
+          this.currentDocument = parsed;
+          this.showPreview(parsed);
+          statusDiv.innerHTML = '<div class="success">Document parsed successfully!</div>';
+        } catch (error) {
+          statusDiv.innerHTML = `<div class="error">${error.message}</div>`;
+          this.currentDocument = null;
+        }
+      },
+
+      showPreview(doc) {
+        document.getElementById('previewSection').classList.remove('hidden');
+        document.getElementById('previewTitle').textContent = doc.title;
+        
+        let bodyPreview = doc.body;
+        if (doc.imageUrl) {
+          bodyPreview = `[Image: ${doc.imageUrl}]\n\n${bodyPreview}`;
+        }
+        
+        document.getElementById('previewBody').textContent = 
+          bodyPreview.length > 500 ? bodyPreview.substring(0, 500) + '...' : bodyPreview;
+      },
+
+      clearPreview() {
+        document.getElementById('previewSection').classList.add('hidden');
+        document.getElementById('fileInput').value = '';
+        document.getElementById('uploadStatus').innerHTML = '';
+        this.currentDocument = null;
+      },
+
+      async submitForApproval() {
+        if (!this.currentDocument) {
+          alert('Please upload and parse a document first');
+          return;
+        }
+
+        const managerEmail = document.getElementById('managerEmail').value;
+        const serviceId = document.getElementById('emailServiceId').value;
+        const templateId = document.getElementById('emailTemplateId').value;
+
+        if (!managerEmail || !managerEmail.includes('@')) {
+          alert('Please enter a valid manager email address');
+          return;
+        }
+
+        const statusDiv = document.getElementById('uploadStatus');
+        statusDiv.innerHTML = '<div class="info">Submitting document and sending email...</div>';
+
+        try {
+          const submission = {
+            title: this.currentDocument.title,
+            body: this.currentDocument.body,
+            imageUrl: this.currentDocument.imageUrl || null,
+            status: 'pending',
+            userId: this.currentUser.uid,
+            userEmail: this.currentUser.email,
+            managerEmail: managerEmail,
+            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          };
+
+          const docRef = await db.collection('submissions').add(submission);
+          
+          // Generate approval links
+          const baseUrl = window.location.origin + window.location.pathname;
+          const approveUrl = `${baseUrl}?post_id=${docRef.id}&action=approve`;
+          const rejectUrl = `${baseUrl}?post_id=${docRef.id}&action=reject`;
+
+          // Prepare email data
+          const documentPreview = this.currentDocument.body.substring(0, 100) + 
+                                 (this.currentDocument.body.length > 100 ? '...' : '');
+          const submissionDate = new Date().toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+
+          const emailParams = {
+            email: managerEmail,
+            document_title: this.currentDocument.title,
+            document_preview: documentPreview,
+            submitter_email: this.currentUser.email,
+            submission_date: submissionDate,
+            approve_url: approveUrl,
+            reject_url: rejectUrl
+          };
+
+          // Send email using EmailJS with recipient email
+          console.log('Sending email with params:', emailParams);
+          console.log('To:', managerEmail);
+          
+          const emailResponse = await emailjs.send(
+            serviceId, 
+            templateId, 
+            emailParams,
+            'GvH9iilO0RUT1NsZ5' // Public key
+          );
+          
+          console.log('Email sent successfully:', emailResponse);
+
+          statusDiv.innerHTML = `
+            <div class="success">
+              ✅ Document submitted successfully!<br>
+              📧 Approval email sent to ${managerEmail}<br>
+              <small style="display: block; margin-top: 10px;">
+                The manager will receive an email with approve/reject buttons.
+              </small>
+              <div style="margin-top: 10px; padding: 10px; background: #fff; border-radius: 4px; font-size: 12px;">
+                <strong>For testing, you can use these links:</strong><br>
+                <a href="${approveUrl}" target="_blank" style="color: #28a745;">Approve</a> | 
+                <a href="${rejectUrl}" target="_blank" style="color: #dc3545;">Reject</a>
+              </div>
+            </div>
+          `;
+
+          this.clearPreview();
+          this.loadSubmissions();
+        } catch (error) {
+          console.error('Submission error:', error);
+          statusDiv.innerHTML = 
+            `<div class="error">
+              Error: ${error.message || 'Failed to send email. Please check your EmailJS configuration.'}
+              <br><small>Make sure your Service ID and Template ID are correct.</small>
+            </div>`;
+        }
+      },
+
+      async loadSubmissions() {
+  try {
+    const snapshot = await db
+      .collection('submissions')
+      .where('userId', '==', this.currentUser.uid)
+      .orderBy('createdAt', 'desc')
+      .get();
+
+    const listDiv = document.getElementById('submissionsList');
+
+    if (snapshot.empty) {
+      listDiv.innerHTML =
+        '<p style="color:#666; text-align:center;">No submissions yet</p>';
+      return;
+    }
+
+    listDiv.innerHTML = snapshot.docs.map(doc => {
+      const data = doc.data();
+      const statusClass = `status-${data.status}`;
+      const date = data.createdAt
+        ? new Date(data.createdAt.toDate()).toLocaleDateString()
+        : 'Just now';
+
+      return `
+        <div class="submission-item">
+          <div class="submission-title">
+            ${data.title}
+            <span class="status-badge ${statusClass}">
+              ${data.status}
+            </span>
+          </div>
+          <div class="submission-meta">
+            Submitted: ${date} | Manager: ${data.managerEmail}
+          </div>
+        </div>
+      `;
+    }).join('');
+  } catch (error) {
+    console.error('Error loading submissions:', error);
+  }
+},
+
+
+      showEmailTemplates() {
+        document.getElementById('templateModal').style.display = 'flex';
+      },
+
+      closeTemplateModal() {
+        document.getElementById('templateModal').style.display = 'none';
+      },
+
+      copyTemplate() {
+        const template = `<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+    .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+    .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+              color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+    .content { background: #f8f9fa; padding: 30px; }
+    .document-preview { background: white; padding: 20px; border-radius: 8px; 
+                        margin: 20px 0; border-left: 4px solid #667eea; }
+    .button { display: inline-block; padding: 12px 30px; margin: 10px 5px; 
+              text-decoration: none; border-radius: 6px; font-weight: 600; }
+    .approve { background: #28a745; color: white; }
+    .reject { background: #dc3545; color: white; }
+    .footer { text-align: center; padding: 20px; color: #666; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📄 Document Approval Required</h1>
+    </div>
+    <div class="content">
+      <p>Hello,</p>
+      <p><strong>{{submitter_email}}</strong> has submitted a document for your approval.</p>
+      
+      <div class="document-preview">
+        <h2 style="margin-top: 0; color: #667eea;">{{document_title}}</h2>
+        <p style="color: #666;">{{document_preview}}</p>
+        <p style="font-size: 12px; color: #999; margin-top: 15px;">
+          Submitted on: {{submission_date}}
+        </p>
+      </div>
+
+      <p><strong>Please review and take action:</strong></p>
+      <div style="text-align: center; margin: 30px 0;">
+        <a href="{{approve_url}}" class="button approve">✅ Approve Document</a>
+        <a href="{{reject_url}}" class="button reject">❌ Reject Document</a>
+      </div>
+
+      <p style="font-size: 12px; color: #666;">
+        If you cannot click the buttons, copy and paste these URLs into your browser:
+        <br><br>
+        Approve: {{approve_url}}<br>
+        Reject: {{reject_url}}
+      </p>
+    </div>
+    <div class="footer">
+      <p>This is an automated message from the Document Approval System.</p>
+    </div>
+  </div>
+</body>
+</html>`;
+
+        navigator.clipboard.writeText(template).then(() => {
+          alert('✅ Template copied to clipboard! Paste it into EmailJS HTML editor.');
+        }).catch(() => {
+          alert('❌ Failed to copy. Please copy manually from the template section.');
+        });
+      }
+    };
+
+    // Unit Tests
+    const tests = {
+      testDocumentParser() {
+        console.log('Running DocumentParser tests...');
+        
+        // Test 1: Basic parsing
+        try {
+          const result = DocumentParser.parse('My Title\nThis is the body content');
+          console.assert(result.title === 'My Title', 'Title should be parsed correctly');
+          console.assert(result.body === 'This is the body content', 'Body should be parsed correctly');
+          console.assert(result.imageUrl === null, 'No image URL should be present');
+          console.log('✅ Test 1 passed: Basic parsing');
+        } catch (e) {
+          console.error('❌ Test 1 failed:', e);
+        }
+
+        // Test 2: Image URL parsing
+        try {
+          const result = DocumentParser.parse('https://example.com/image.jpg\nMy Title\nBody content');
+          console.assert(result.imageUrl === 'https://example.com/image.jpg', 'Image URL should be extracted');
+          console.assert(result.title === 'My Title', 'Title should follow image URL');
+          console.assert(result.body === 'Body content', 'Body should be correct');
+          console.log('✅ Test 2 passed: Image URL parsing');
+        } catch (e) {
+          console.error('❌ Test 2 failed:', e);
+        }
+
+        // Test 3: Empty document
+        try {
+          DocumentParser.parse('');
+          console.error('❌ Test 3 failed: Should throw error for empty document');
+        } catch (e) {
+          console.assert(e.message === 'Document is empty', 'Should throw empty document error');
+          console.log('✅ Test 3 passed: Empty document validation');
+        }
+
+        // Test 4: Missing body
+        try {
+          DocumentParser.parse('Just a title');
+          console.error('❌ Test 4 failed: Should throw error for missing body');
+        } catch (e) {
+          console.assert(e.message === 'Document body is required', 'Should throw missing body error');
+          console.log('✅ Test 4 passed: Missing body validation');
+        }
+
+        console.log('All DocumentParser tests completed!');
+      },
+
+      testStateTransitions() {
+        console.log('Running state transition tests...');
+        
+        const validTransitions = {
+          'draft': ['pending'],
+          'pending': ['approved', 'rejected'],
+          'approved': [],
+          'rejected': []
+        };
+
+        function canTransition(from, to) {
+          return validTransitions[from] && validTransitions[from].includes(to);
+        }
+
+        console.assert(canTransition('draft', 'pending') === true, 'Draft -> Pending should be valid');
+        console.assert(canTransition('pending', 'approved') === true, 'Pending -> Approved should be valid');
+        console.assert(canTransition('pending', 'rejected') === true, 'Pending -> Rejected should be valid');
+        console.assert(canTransition('approved', 'rejected') === false, 'Approved -> Rejected should be invalid');
+        console.assert(canTransition('draft', 'approved') === false, 'Draft -> Approved should be invalid');
+        
+        console.log('✅ All state transition tests passed!');
+      }
+    };
+
+    // Initialize app and run tests
+    document.addEventListener('DOMContentLoaded', () => {
+      app.init();
+      tests.testDocumentParser();
+      tests.testStateTransitions();
+    });
+  </script>
+</body>
+</html>

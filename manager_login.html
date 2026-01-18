@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manager Approval Dashboard</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-auth-compat.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-firestore-compat.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+    }
+
+    .user-info {
+      color: #666;
+      font-size: 14px;
+    }
+
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s, transform 0.1s;
+      margin: 5px;
+    }
+
+    button:hover {
+      background: #5568d3;
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .approve-btn {
+      background: #28a745;
+    }
+
+    .approve-btn:hover {
+      background: #218838;
+    }
+
+    .reject-btn {
+      background: #dc3545;
+    }
+
+    .reject-btn:hover {
+      background: #c82333;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+
+    .status-pending {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .status-approved {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .status-rejected {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    .filters {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      background: #f8f9fa;
+      color: #333;
+      padding: 8px 16px;
+      font-size: 13px;
+    }
+
+    .filter-btn.active {
+      background: #667eea;
+      color: white;
+    }
+
+    .proposal-card {
+      background: #f8f9fa;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 15px;
+      border-left: 4px solid #667eea;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .proposal-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .proposal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: start;
+      margin-bottom: 15px;
+    }
+
+    .proposal-title {
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 5px;
+    }
+
+    .proposal-meta {
+      display: flex;
+      gap: 20px;
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+    }
+
+    .meta-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .proposal-body {
+      background: white;
+      padding: 15px;
+      border-radius: 6px;
+      margin: 15px 0;
+      color: #555;
+      line-height: 1.6;
+      max-height: 150px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+
+    .proposal-image {
+      margin: 15px 0;
+      padding: 10px;
+      background: white;
+      border-radius: 6px;
+    }
+
+    .proposal-image img {
+      max-width: 100%;
+      max-height: 200px;
+      border-radius: 4px;
+    }
+
+    .proposal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #666;
+    }
+
+    .empty-state-icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+    }
+
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 12px;
+      border-radius: 6px;
+      margin: 10px 0;
+      border-left: 4px solid #f5c6cb;
+    }
+
+    .success {
+      background: #d4edda;
+      color: #155724;
+      padding: 12px;
+      border-radius: 6px;
+      margin: 10px 0;
+      border-left: 4px solid #c3e6cb;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .stats-container {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .stat-number {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 5px;
+    }
+
+    .stat-label {
+      font-size: 13px;
+      opacity: 0.9;
+    }
+
+    .auth-section {
+      text-align: center;
+      max-width: 400px;
+      margin: 0 auto;
+    }
+
+    .loader {
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #667eea;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      animation: spin 1s linear infinite;
+      margin: 20px auto;
+    }
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .view-toggle {
+      display: flex;
+      gap: 5px;
+      background: #f8f9fa;
+      padding: 4px;
+      border-radius: 6px;
+    }
+
+    .view-toggle button {
+      background: transparent;
+      color: #666;
+      padding: 8px 16px;
+      margin: 0;
+      font-size: 13px;
+    }
+
+    .view-toggle button.active {
+      background: white;
+      color: #667eea;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    @media (max-width: 768px) {
+      .proposal-header {
+        flex-direction: column;
+      }
+
+      .filters {
+        flex-direction: column;
+      }
+
+      .proposal-actions {
+        flex-direction: column;
+      }
+
+      .proposal-actions button {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Authentication Section -->
+    <div id="authSection" class="card">
+      <div class="auth-section">
+        <h1>👔 Manager Dashboard</h1>
+        <p style="margin: 20px 0; color: #666;">Sign in to review document proposals</p>
+        <input type="email" id="authEmail" placeholder="Manager email address" value="manager@gmail.com" />
+        <input type="password" id="authPassword" placeholder="Password" value="123" />
+        <div>
+          <button onclick="manager.signIn()">Sign In</button>
+        </div>
+        <div id="authError"></div>
+        <div style="margin-top: 20px; padding: 15px; background: #d1ecf1; border-radius: 8px; font-size: 13px; color: #0c5460;">
+          <strong>ℹ️ Default Manager Account:</strong><br>
+          Email: manager@gmail.com<br>
+          Password: 123456
+        </div>
+      </div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <div id="dashboardSection" class="card hidden">
+      <div class="header">
+        <div>
+          <h1>👔 Manager Approval Dashboard</h1>
+          <div class="user-info">Logged in as: <strong id="userEmail"></strong></div>
+        </div>
+        <button onclick="manager.signOut()">Sign Out</button>
+      </div>
+
+      <!-- Statistics -->
+      <div class="stats-container">
+        <div class="stat-card">
+          <div class="stat-number" id="totalCount">0</div>
+          <div class="stat-label">Total Proposals</div>
+        </div>
+        <div class="stat-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+          <div class="stat-number" id="pendingCount">0</div>
+          <div class="stat-label">Pending Review</div>
+        </div>
+        <div class="stat-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+          <div class="stat-number" id="approvedCount">0</div>
+          <div class="stat-label">Approved</div>
+        </div>
+        <div class="stat-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+          <div class="stat-number" id="rejectedCount">0</div>
+          <div class="stat-label">Rejected</div>
+        </div>
+      </div>
+
+      <!-- Filters -->
+      <div class="filters">
+        <button class="filter-btn active" onclick="manager.filterProposals('all')">All</button>
+        <button class="filter-btn" onclick="manager.filterProposals('pending')">Pending</button>
+        <button class="filter-btn" onclick="manager.filterProposals('approved')">Approved</button>
+        <button class="filter-btn" onclick="manager.filterProposals('rejected')">Rejected</button>
+      </div>
+
+      <!-- Proposals List -->
+      <div id="proposalsList">
+        <div class="loader"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Firebase Configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyBwJK7Y_gtEYXNI0Ntm3P0ockh_c5sSizs",
+      authDomain: "portfolio-c2803.firebaseapp.com",
+      projectId: "portfolio-c2803",
+      storageBucket: "portfolio-c2803.firebasestorage.app",
+      messagingSenderId: "891551375739",
+      appId: "1:891551375739:web:9acc9d36d076263736ddde",
+      measurementId: "G-3S06FWVC8T"
+    };
+
+    // Initialize Firebase
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // Manager Dashboard App
+    const manager = {
+      currentUser: null,
+      allProposals: [],
+      currentFilter: 'all',
+
+      init() {
+        // Auto-create default manager account if it doesn't exist
+        this.ensureDefaultManager();
+        
+        auth.onAuthStateChanged(user => {
+          this.currentUser = user;
+          if (user) {
+            this.showDashboard();
+            this.loadProposals();
+          } else {
+            this.showAuth();
+          }
+        });
+      },
+
+      async ensureDefaultManager() {
+        const defaultEmail = 'manager@gmail.com';
+        const defaultPassword = '123';
+        
+        try {
+          // Try to sign in with default credentials
+          await auth.signInWithEmailAndPassword(defaultEmail, defaultPassword);
+          // If successful, sign out immediately (user will sign in manually)
+          await auth.signOut();
+        } catch (error) {
+          // If account doesn't exist, create it
+          if (error.code === 'auth/user-not-found') {
+            try {
+              await auth.createUserWithEmailAndPassword(defaultEmail, defaultPassword);
+              console.log('✅ Default manager account created');
+              await auth.signOut();
+            } catch (createError) {
+              console.log('Default manager account may already exist');
+            }
+          }
+        }
+      },
+
+      showAuth() {
+        document.getElementById('authSection').classList.remove('hidden');
+        document.getElementById('dashboardSection').classList.add('hidden');
+      },
+
+      showDashboard() {
+        document.getElementById('authSection').classList.add('hidden');
+        document.getElementById('dashboardSection').classList.remove('hidden');
+        document.getElementById('userEmail').textContent = this.currentUser.email;
+      },
+
+      async signIn() {
+        const email = document.getElementById('authEmail').value;
+        const password = document.getElementById('authPassword').value;
+        
+        try {
+          await auth.signInWithEmailAndPassword(email, password);
+          document.getElementById('authError').innerHTML = '';
+        } catch (error) {
+          document.getElementById('authError').innerHTML = 
+            `<div class="error">${error.message}</div>`;
+        }
+      },
+
+      async signOut() {
+        await auth.signOut();
+      },
+
+      async loadProposals() {
+        try {
+          // Load all submissions
+          db.collection('submissions')
+            .orderBy('createdAt', 'desc')
+            .onSnapshot(snapshot => {
+              this.allProposals = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+              }));
+              
+              this.updateStatistics();
+              this.renderProposals();
+            });
+        } catch (error) {
+          console.error('Error loading proposals:', error);
+          document.getElementById('proposalsList').innerHTML = 
+            `<div class="error">Error loading proposals: ${error.message}</div>`;
+        }
+      },
+
+      updateStatistics() {
+        const total = this.allProposals.length;
+        const pending = this.allProposals.filter(p => p.status === 'pending').length;
+        const approved = this.allProposals.filter(p => p.status === 'approved').length;
+        const rejected = this.allProposals.filter(p => p.status === 'rejected').length;
+
+        document.getElementById('totalCount').textContent = total;
+        document.getElementById('pendingCount').textContent = pending;
+        document.getElementById('approvedCount').textContent = approved;
+        document.getElementById('rejectedCount').textContent = rejected;
+      },
+
+      filterProposals(status) {
+        this.currentFilter = status;
+        
+        // Update active filter button
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+          btn.classList.remove('active');
+        });
+        event.target.classList.add('active');
+        
+        this.renderProposals();
+      },
+
+      renderProposals() {
+        const listDiv = document.getElementById('proposalsList');
+        
+        let filteredProposals = this.allProposals;
+        if (this.currentFilter !== 'all') {
+          filteredProposals = this.allProposals.filter(p => p.status === this.currentFilter);
+        }
+
+        if (filteredProposals.length === 0) {
+          listDiv.innerHTML = `
+            <div class="empty-state">
+              <div class="empty-state-icon">📭</div>
+              <h3>No proposals found</h3>
+              <p style="margin-top: 10px;">
+                ${this.currentFilter === 'all' 
+                  ? 'No proposals have been submitted yet.' 
+                  : `No ${this.currentFilter} proposals.`}
+              </p>
+            </div>
+          `;
+          return;
+        }
+
+        listDiv.innerHTML = filteredProposals.map(proposal => {
+          const date = proposal.createdAt 
+            ? new Date(proposal.createdAt.toDate()).toLocaleString() 
+            : 'Just now';
+          
+          const statusClass = `status-${proposal.status}`;
+          const isPending = proposal.status === 'pending';
+          
+          return `
+            <div class="proposal-card">
+              <div class="proposal-header">
+                <div style="flex: 1;">
+                  <div class="proposal-title">${proposal.title}</div>
+                  <div class="proposal-meta">
+                    <div class="meta-item">
+                      <span>👤</span>
+                      <strong>${proposal.userEmail}</strong>
+                    </div>
+                    <div class="meta-item">
+                      <span>📅</span>
+                      ${date}
+                    </div>
+                    <div class="meta-item">
+                      <span>📧</span>
+                      Manager: ${proposal.managerEmail}
+                    </div>
+                  </div>
+                </div>
+                <span class="status-badge ${statusClass}">${proposal.status}</span>
+              </div>
+
+              ${proposal.imageUrl ? `
+                <div class="proposal-image">
+                  <img src="${proposal.imageUrl}" alt="Proposal image" 
+                       onerror="this.style.display='none'" />
+                </div>
+              ` : ''}
+
+              <div class="proposal-body">${proposal.body}</div>
+
+              ${isPending ? `
+                <div class="proposal-actions">
+                  <button class="approve-btn" onclick="manager.approveProposal('${proposal.id}')">
+                    ✅ Approve
+                  </button>
+                  <button class="reject-btn" onclick="manager.rejectProposal('${proposal.id}')">
+                    ❌ Reject
+                  </button>
+                </div>
+              ` : `
+                <div style="margin-top: 15px; padding: 10px; background: white; border-radius: 6px; font-size: 13px; color: #666;">
+                  <strong>Decision:</strong> This proposal has been ${proposal.status}.
+                  ${proposal.updatedAt ? `<br><strong>Updated:</strong> ${new Date(proposal.updatedAt.toDate()).toLocaleString()}` : ''}
+                </div>
+              `}
+            </div>
+          `;
+        }).join('');
+      },
+
+      async approveProposal(proposalId) {
+        if (!confirm('Are you sure you want to approve this proposal?')) {
+          return;
+        }
+
+        try {
+          await db.collection('submissions').doc(proposalId).update({
+            status: 'approved',
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          
+          this.showNotification('✅ Proposal approved successfully!', 'success');
+        } catch (error) {
+          this.showNotification('❌ Error approving proposal: ' + error.message, 'error');
+        }
+      },
+
+      async rejectProposal(proposalId) {
+        if (!confirm('Are you sure you want to reject this proposal?')) {
+          return;
+        }
+
+        try {
+          await db.collection('submissions').doc(proposalId).update({
+            status: 'rejected',
+            updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+          });
+          
+          this.showNotification('❌ Proposal rejected.', 'success');
+        } catch (error) {
+          this.showNotification('❌ Error rejecting proposal: ' + error.message, 'error');
+        }
+      },
+
+      showNotification(message, type) {
+        const notification = document.createElement('div');
+        notification.className = type;
+        notification.textContent = message;
+        notification.style.position = 'fixed';
+        notification.style.top = '20px';
+        notification.style.right = '20px';
+        notification.style.zIndex = '1000';
+        notification.style.maxWidth = '400px';
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+          notification.remove();
+        }, 3000);
+      }
+    };
+
+    // Initialize the manager dashboard
+    document.addEventListener('DOMContentLoaded', () => {
+      manager.init();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Manager Approval Dashboard</title>
+
+  <!-- Firebase -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-app-compat.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-auth-compat.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/9.22.0/firebase-firestore-compat.min.js"></script>
+
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f4f6fb;
+      padding: 20px;
+    }
+
+    .card {
+      background: #fff;
+      padding: 20px;
+      border-radius: 10px;
+      margin-bottom: 15px;
+      box-shadow: 0 5px 15px rgba(0,0,0,.08);
+    }
+
+    .status {
+      font-size: 12px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+    }
+
+    .pending { background: #fff3cd; color: #856404; }
+    .approved { background: #d4edda; color: #155724; }
+    .rejected { background: #f8d7da; color: #721c24; }
+
+    button {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      margin-right: 8px;
+    }
+
+    .approve { background: #28a745; color: #fff; }
+    .reject { background: #dc3545; color: #fff; }
+
+    pre {
+      white-space: pre-wrap;
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 6px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>🧑‍💼 Manager Dashboard</h1>
+<p id="managerEmail"></p>
+<button onclick="logout()">Sign Out</button>
+
+<div id="list"></div>
+
+<script>
+  // Firebase config (same as your main app)
+  const firebaseConfig = {
+    apiKey: "AIzaSyBwJK7Y_gtEYXNI0Ntm3P0ockh_c5sSizs",
+    authDomain: "portfolio-c2803.firebaseapp.com",
+    projectId: "portfolio-c2803",
+    storageBucket: "portfolio-c2803.firebasestorage.app",
+    messagingSenderId: "891551375739",
+    appId: "1:891551375739:web:9acc9d36d076263736ddde"
+  };
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  auth.onAuthStateChanged(user => {
+    if (!user) {
+      window.location.href = "index.html"; // your login page
+      return;
+    }
+
+    document.getElementById("managerEmail").innerText =
+      `Logged in as: ${user.email}`;
+
+    loadSubmissions(user.email);
+  });
+
+  function loadSubmissions(managerEmail) {
+    db.collection("submissions")
+      .where("managerEmail", "==", managerEmail)
+      .orderBy("createdAt", "desc")
+      .onSnapshot(snapshot => {
+        const list = document.getElementById("list");
+
+        if (snapshot.empty) {
+          list.innerHTML = "<p>No submissions found.</p>";
+          return;
+        }
+
+        list.innerHTML = snapshot.docs.map(doc => {
+          const d = doc.data();
+
+          return `
+            <div class="card">
+              <h3>${d.title}</h3>
+
+              <span class="status ${d.status}">
+                ${d.status}
+              </span>
+
+              <p><strong>Submitted by:</strong> ${d.userEmail}</p>
+
+              ${d.imageUrl ? `<img src="${d.imageUrl}" style="max-width:100%;margin:10px 0;">` : ""}
+
+              <pre>${d.body.substring(0, 800)}${d.body.length > 800 ? "..." : ""}</pre>
+
+              ${d.status === "pending" ? `
+                <button class="approve" onclick="updateStatus('${doc.id}','approved')">
+                  ✅ Approve
+                </button>
+                <button class="reject" onclick="updateStatus('${doc.id}','rejected')">
+                  ❌ Reject
+                </button>
+              ` : ""}
+            </div>
+          `;
+        }).join("");
+      });
+  }
+
+  function updateStatus(id, status) {
+    db.collection("submissions").doc(id).update({
+      status,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+  }
+
+  function logout() {
+    auth.signOut();
+  }
+</script>
+
+</body>
+</html>

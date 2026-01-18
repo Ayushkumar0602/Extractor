@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Login</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Import Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #36d1dc 0%, #5b86e5 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 500px;
+            width: 100%;
+            background-color: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .header {
+            background: linear-gradient(to right, #36d1dc, #5b86e5);
+            padding: 40px 30px;
+            text-align: center;
+            color: white;
+        }
+        
+        .header i {
+            font-size: 3.5rem;
+            margin-bottom: 15px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+        
+        .back-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background-color: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        
+        .back-btn:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+        
+        .form-container {
+            padding: 40px 30px;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #eee;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: 600;
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: #777;
+            transition: color 0.3s ease;
+            position: relative;
+        }
+        
+        .tab.active {
+            color: #5b86e5;
+        }
+        
+        .tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: #5b86e5;
+            border-radius: 3px 3px 0 0;
+        }
+        
+        .form {
+            display: none;
+        }
+        
+        .form.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .input-with-icon {
+            position: relative;
+        }
+        
+        .input-with-icon i {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #777;
+        }
+        
+        .input-with-icon input {
+            width: 100%;
+            padding: 15px 15px 15px 50px;
+            border: 2px solid #eee;
+            border-radius: 10px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .input-with-icon input:focus {
+            border-color: #5b86e5;
+            outline: none;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 10px;
+        }
+        
+        .btn-primary {
+            background-color: #5b86e5;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: #4575d9;
+        }
+        
+        .btn-google {
+            background-color: white;
+            color: #333;
+            border: 2px solid #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .btn-google:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .btn-google img {
+            width: 20px;
+            height: 20px;
+        }
+        
+        .divider {
+            display: flex;
+            align-items: center;
+            margin: 25px 0;
+            color: #777;
+        }
+        
+        .divider::before, .divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background-color: #eee;
+        }
+        
+        .divider span {
+            padding: 0 15px;
+        }
+        
+        .form-footer {
+            text-align: center;
+            margin-top: 25px;
+            color: #777;
+        }
+        
+        .form-footer a {
+            color: #5b86e5;
+            text-decoration: none;
+            font-weight: 600;
+        }
+        
+        .form-footer a:hover {
+            text-decoration: underline;
+        }
+        
+        .message {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 25px;
+            text-align: center;
+            display: none;
+        }
+        
+        .message.success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        
+        .message.error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        
+        .password-toggle {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            color: #777;
+            cursor: pointer;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                max-width: 100%;
+            }
+            
+            .header {
+                padding: 30px 20px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .form-container {
+                padding: 30px 20px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            
+            .tab {
+                font-size: 1rem;
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <button class="back-btn" onclick="window.location.href='index.html'">
+        <i class="fas fa-arrow-left"></i>
+    </button>
+    
+    <div class="container">
+        <div class="header">
+            <i class="fas fa-user"></i>
+            <h1>User Login</h1>
+            <p>Access your personal dashboard and manage your account</p>
+        </div>
+        
+        <div class="form-container">
+            <div class="tabs">
+                <button class="tab active" data-tab="login">Login</button>
+                <button class="tab" data-tab="signup">Sign Up</button>
+            </div>
+            
+            <div class="message" id="message"></div>
+            
+            <!-- Login Form -->
+            <form id="loginForm" class="form active">
+                <div class="form-group">
+                    <label for="loginEmail">Email Address</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="loginEmail" placeholder="Enter your email" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                        <button type="button" class="password-toggle" id="loginPasswordToggle">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" id="loginBtn">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
+                
+                <div class="divider">
+                    <span>OR</span>
+                </div>
+                
+                <button type="button" class="btn btn-google" id="googleLoginBtn">
+                    <img src="https://img.icons8.com/color/16/000000/google-logo.png" alt="Google Logo">
+                    Sign in with Google
+                </button>
+                
+                <div class="form-footer">
+                    <p>Don't have an account? <a href="#" id="showSignup">Sign Up</a></p>
+                </div>
+            </form>
+            
+            <!-- Sign Up Form -->
+            <form id="signupForm" class="form">
+                <div class="form-group">
+                    <label for="signupName">Full Name</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-user"></i>
+                        <input type="text" id="signupName" placeholder="Enter your full name" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="signupEmail">Email Address</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-envelope"></i>
+                        <input type="email" id="signupEmail" placeholder="Enter your email" required>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="signupPassword">Password</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="signupPassword" placeholder="Create a password" required>
+                        <button type="button" class="password-toggle" id="signupPasswordToggle">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <small>Password must be at least 6 characters long</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <div class="input-with-icon">
+                        <i class="fas fa-lock"></i>
+                        <input type="password" id="confirmPassword" placeholder="Confirm your password" required>
+                        <button type="button" class="password-toggle" id="confirmPasswordToggle">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <button type="submit" class="btn btn-primary" id="signupBtn">
+                    <i class="fas fa-user-plus"></i> Create Account
+                </button>
+                
+                <div class="divider">
+                    <span>OR</span>
+                </div>
+                
+                <button type="button" class="btn btn-google" id="googleSignupBtn">
+                    <img src="https://img.icons8.com/color/16/000000/google-logo.png" alt="Google Logo">
+                    Sign up with Google
+                </button>
+                
+                <div class="form-footer">
+                    <p>Already have an account? <a href="#" id="showLogin">Login</a></p>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyBwJK7Y_gtEYXNI0Ntm3P0ockh_c5sSizs",
+            authDomain: "portfolio-c2803.firebaseapp.com",
+            projectId: "portfolio-c2803",
+            storageBucket: "portfolio-c2803.firebasestorage.app",
+            messagingSenderId: "891551375739",
+            appId: "1:891551375739:web:9acc9d36d076263736ddde",
+            measurementId: "G-3S06FWVC8T"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        
+        // DOM Elements
+        const loginForm = document.getElementById('loginForm');
+        const signupForm = document.getElementById('signupForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const signupBtn = document.getElementById('signupBtn');
+        const googleLoginBtn = document.getElementById('googleLoginBtn');
+        const googleSignupBtn = document.getElementById('googleSignupBtn');
+        const showSignup = document.getElementById('showSignup');
+        const showLogin = document.getElementById('showLogin');
+        const tabs = document.querySelectorAll('.tab');
+        const messageDiv = document.getElementById('message');
+        
+        // Password toggle functionality
+        function setupPasswordToggle(passwordId, toggleId) {
+            const passwordField = document.getElementById(passwordId);
+            const toggleButton = document.getElementById(toggleId);
+            
+            toggleButton.addEventListener('click', function() {
+                const type = passwordField.getAttribute('type') === 'password' ? 'text' : 'password';
+                passwordField.setAttribute('type', type);
+                
+                // Toggle eye icon
+                this.innerHTML = type === 'password' ? '<i class="fas fa-eye"></i>' : '<i class="fas fa-eye-slash"></i>';
+            });
+        }
+        
+        // Initialize password toggles
+        setupPasswordToggle('loginPassword', 'loginPasswordToggle');
+        setupPasswordToggle('signupPassword', 'signupPasswordToggle');
+        setupPasswordToggle('confirmPassword', 'confirmPasswordToggle');
+        
+        // Tab switching
+        tabs.forEach(tab => {
+            tab.addEventListener('click', function() {
+                const tabId = this.getAttribute('data-tab');
+                
+                // Update active tab
+                tabs.forEach(t => t.classList.remove('active'));
+                this.classList.add('active');
+                
+                // Show corresponding form
+                document.querySelectorAll('.form').forEach(form => {
+                    form.classList.remove('active');
+                });
+                document.getElementById(tabId + 'Form').classList.add('active');
+                
+                // Clear any messages
+                clearMessage();
+            });
+        });
+        
+        // Switch to signup form
+        showSignup.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.querySelector('.tab[data-tab="signup"]').click();
+        });
+        
+        // Switch to login form
+        showLogin.addEventListener('click', function(e) {
+            e.preventDefault();
+            document.querySelector('.tab[data-tab="login"]').click();
+        });
+        
+        // Display message function
+        function showMessage(text, type) {
+            messageDiv.textContent = text;
+            messageDiv.className = 'message ' + type;
+        }
+        
+        // Clear message
+        function clearMessage() {
+            messageDiv.textContent = '';
+            messageDiv.className = 'message';
+        }
+        
+        // Email/Password Login
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            clearMessage();
+            
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+            
+            // Show loading state
+            loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Logging in...';
+            loginBtn.disabled = true;
+            
+            auth.signInWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    // Login successful
+                    const user = userCredential.user;
+                    showMessage(`Welcome back, ${user.email}! Login successful.`, 'success');
+                    
+                    // Redirect to user dashboard after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = 'user_dashboard.html';
+                    }, 2000);
+                })
+                .catch((error) => {
+                    // Login failed
+                    let errorMessage = "Login failed. Please check your credentials.";
+                    
+                    switch(error.code) {
+                        case 'auth/invalid-email':
+                            errorMessage = "Invalid email address.";
+                            break;
+                        case 'auth/user-disabled':
+                            errorMessage = "This account has been disabled.";
+                            break;
+                        case 'auth/user-not-found':
+                            errorMessage = "No account found with this email.";
+                            break;
+                        case 'auth/wrong-password':
+                            errorMessage = "Incorrect password.";
+                            break;
+                        default:
+                            errorMessage = error.message;
+                    }
+                    
+                    showMessage(errorMessage, 'error');
+                })
+                .finally(() => {
+                    // Reset button state
+                    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+                    loginBtn.disabled = false;
+                });
+        });
+        
+        // Email/Password Signup
+        signupForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            clearMessage();
+            
+            const name = document.getElementById('signupName').value;
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            // Validate passwords match
+            if (password !== confirmPassword) {
+                showMessage("Passwords do not match.", 'error');
+                return;
+            }
+            
+            // Validate password length
+            if (password.length < 6) {
+                showMessage("Password must be at least 6 characters long.", 'error');
+                return;
+            }
+            
+            // Show loading state
+            signupBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Creating Account...';
+            signupBtn.disabled = true;
+            
+            auth.createUserWithEmailAndPassword(email, password)
+                .then((userCredential) => {
+                    // Signup successful
+                    const user = userCredential.user;
+                    
+                    // Update user profile with name
+                    return user.updateProfile({
+                        displayName: name
+                    }).then(() => {
+                        showMessage(`Account created successfully! Welcome, ${name}.`, 'success');
+                        
+                        // Send email verification
+                        user.sendEmailVerification();
+                        
+                        // Redirect to user dashboard after 3 seconds
+                        setTimeout(() => {
+                            window.location.href = 'user_dashboard.html';
+                        }, 3000);
+                    });
+                })
+                .catch((error) => {
+                    // Signup failed
+                    let errorMessage = "Signup failed. Please try again.";
+                    
+                    switch(error.code) {
+                        case 'auth/email-already-in-use':
+                            errorMessage = "This email is already registered.";
+                            break;
+                        case 'auth/invalid-email':
+                            errorMessage = "Invalid email address.";
+                            break;
+                        case 'auth/operation-not-allowed':
+                            errorMessage = "Email/password accounts are not enabled.";
+                            break;
+                        case 'auth/weak-password':
+                            errorMessage = "Password is too weak.";
+                            break;
+                        default:
+                            errorMessage = error.message;
+                    }
+                    
+                    showMessage(errorMessage, 'error');
+                })
+                .finally(() => {
+                    // Reset button state
+                    signupBtn.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
+                    signupBtn.disabled = false;
+                });
+        });
+        
+        // Google Authentication (for both login and signup)
+        function signInWithGoogle() {
+            const provider = new firebase.auth.GoogleAuthProvider();
+            
+            // Show loading state on both Google buttons
+            googleLoginBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting with Google...';
+            googleSignupBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting with Google...';
+            googleLoginBtn.disabled = true;
+            googleSignupBtn.disabled = true;
+            
+            auth.signInWithPopup(provider)
+                .then((result) => {
+                    // Google sign-in successful
+                    const user = result.user;
+                    showMessage(`Welcome, ${user.displayName}! Sign-in successful.`, 'success');
+                    
+                    // Redirect to user dashboard after 2 seconds
+                    setTimeout(() => {
+                        window.location.href = 'user_dashboard.html';
+                    }, 2000);
+                })
+                .catch((error) => {
+                    // Google sign-in failed
+                    let errorMessage = "Google sign-in failed.";
+                    
+                    switch(error.code) {
+                        case 'auth/account-exists-with-different-credential':
+                            errorMessage = "An account already exists with the same email address but different sign-in credentials.";
+                            break;
+                        case 'auth/popup-closed-by-user':
+                            errorMessage = "Sign-in popup was closed before completing sign-in.";
+                            break;
+                        case 'auth/cancelled-popup-request':
+                            errorMessage = "Sign-in was cancelled.";
+                            break;
+                        default:
+                            errorMessage = error.message;
+                    }
+                    
+                    showMessage(errorMessage, 'error');
+                })
+                .finally(() => {
+                    // Reset button states
+                    googleLoginBtn.innerHTML = '<img src="https://img.icons8.com/color/16/000000/google-logo.png" alt="Google Logo"> Sign in with Google';
+                    googleSignupBtn.innerHTML = '<img src="https://img.icons8.com/color/16/000000/google-logo.png" alt="Google Logo"> Sign up with Google';
+                    googleLoginBtn.disabled = false;
+                    googleSignupBtn.disabled = false;
+                });
+        }
+        
+        // Attach Google sign-in to both buttons
+        googleLoginBtn.addEventListener('click', signInWithGoogle);
+        googleSignupBtn.addEventListener('click', signInWithGoogle);
+        
+        // Check if user is already logged in
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                // User is signed in, you could redirect them directly
+                // For this example, we'll just show a message
+                console.log("User is already logged in:", user.email);
+            }
+        });
+        
+        // Form validation
+        function validateEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email);
+        }
+        
+        // Real-time email validation
+        document.getElementById('loginEmail').addEventListener('blur', function() {
+            if (this.value && !validateEmail(this.value)) {
+                this.style.borderColor = '#f46b45';
+            } else {
+                this.style.borderColor = '#eee';
+            }
+        });
+        
+        document.getElementById('signupEmail').addEventListener('blur', function() {
+            if (this.value && !validateEmail(this.value)) {
+                this.style.borderColor = '#f46b45';
+            } else {
+                this.style.borderColor = '#eee';
+            }
+        });
+    </script>
+</body>
+</html>

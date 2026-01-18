@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Selection</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 40px;
+        }
+        
+        .header {
+            text-align: center;
+            color: white;
+            max-width: 800px;
+        }
+        
+        .header h1 {
+            font-size: 3.5rem;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+        
+        .header p {
+            font-size: 1.3rem;
+            opacity: 0.9;
+            line-height: 1.6;
+        }
+        
+        .login-options {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 40px;
+            width: 100%;
+        }
+        
+        .option-card {
+            background-color: white;
+            border-radius: 20px;
+            overflow: hidden;
+            width: 100%;
+            max-width: 350px;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.4s ease, box-shadow 0.4s ease;
+            cursor: pointer;
+        }
+        
+        .option-card:hover {
+            transform: translateY(-15px);
+            box-shadow: 0 25px 40px rgba(0, 0, 0, 0.25);
+        }
+        
+        .card-header {
+            padding: 30px 20px;
+            text-align: center;
+            color: white;
+        }
+        
+        .user-login .card-header {
+            background: linear-gradient(to right, #36d1dc, #5b86e5);
+        }
+        
+        .manager-login .card-header {
+            background: linear-gradient(to right, #f46b45, #eea849);
+        }
+        
+        .card-header i {
+            font-size: 4rem;
+            margin-bottom: 15px;
+        }
+        
+        .card-header h2 {
+            font-size: 2.2rem;
+            font-weight: 700;
+        }
+        
+        .card-content {
+            padding: 30px 25px;
+            color: #333;
+        }
+        
+        .card-content p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+        
+        .login-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            text-align: center;
+            text-decoration: none;
+            color: white;
+        }
+        
+        .user-login .login-btn {
+            background-color: #5b86e5;
+        }
+        
+        .user-login .login-btn:hover {
+            background-color: #4575d9;
+        }
+        
+        .manager-login .login-btn {
+            background-color: #eea849;
+        }
+        
+        .manager-login .login-btn:hover {
+            background-color: #e8952a;
+        }
+        
+        .features {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 30px;
+            margin-top: 20px;
+            max-width: 800px;
+        }
+        
+        .feature {
+            background-color: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            color: white;
+            text-align: center;
+            width: 180px;
+        }
+        
+        .feature i {
+            font-size: 2.5rem;
+            margin-bottom: 15px;
+        }
+        
+        .feature h3 {
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+        
+        .footer {
+            color: rgba(255, 255, 255, 0.7);
+            text-align: center;
+            margin-top: 30px;
+            font-size: 0.9rem;
+            max-width: 800px;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2.8rem;
+            }
+            
+            .login-options {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .option-card {
+                max-width: 100%;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .header h1 {
+                font-size: 2.2rem;
+            }
+            
+            .header p {
+                font-size: 1.1rem;
+            }
+            
+            .card-header h2 {
+                font-size: 1.8rem;
+            }
+            
+            .feature {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Welcome to Access Portal</h1>
+            <p>Please select your login type to access the system. Users and managers have different interfaces and capabilities tailored to their specific roles.</p>
+        </div>
+        
+        <div class="login-options">
+            <!-- User Login Option -->
+            <div class="option-card user-login">
+                <div class="card-header">
+                    <i class="fas fa-user"></i>
+                    <h2>User Login</h2>
+                </div>
+                <div class="card-content">
+                    <p>Access your personal dashboard, submit requests, track progress, and manage your account settings.</p>
+                    <a href="user_login.html" class="login-btn">
+                        <i class="fas fa-sign-in-alt"></i> Login as User
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Manager Login Option -->
+            <div class="option-card manager-login">
+                <div class="card-header">
+                    <i class="fas fa-user-tie"></i>
+                    <h2>Manager Login</h2>
+                </div>
+                <div class="card-content">
+                    <p>Access administrative controls, review requests, manage users, and view system analytics and reports.</p>
+                    <a href="manager_login.html" class="login-btn">
+                        <i class="fas fa-sign-in-alt"></i> Login as Manager
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="features">
+            <div class="feature">
+                <i class="fas fa-shield-alt"></i>
+                <h3>Secure Access</h3>
+                <p>Enterprise-grade security for all accounts</p>
+            </div>
+            <div class="feature">
+                <i class="fas fa-bolt"></i>
+                <h3>Fast Navigation</h3>
+                <p>Quick access to your tools and data</p>
+            </div>
+            <div class="feature">
+                <i class="fas fa-mobile-alt"></i>
+                <h3>Responsive Design</h3>
+                <p>Works on all devices and screen sizes</p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>&copy; 2023 Access Portal. All rights reserved. | Need help? Contact support@example.com</p>
+        </div>
+    </div>
+
+    <script>
+        // Add click animation to cards
+        document.querySelectorAll('.option-card').forEach(card => {
+            card.addEventListener('click', function(e) {
+                // Only redirect if the click wasn't on the button itself
+                if (!e.target.classList.contains('login-btn') && !e.target.closest('.login-btn')) {
+                    const link = this.querySelector('.login-btn');
+                    window.location.href = link.href;
+                }
+            });
+        });
+        
+        // Add a simple hover effect enhancement
+        document.querySelectorAll('.login-btn').forEach(button => {
+            button.addEventListener('mouseenter', function() {
+                this.parentElement.parentElement.style.transform = 'translateY(-15px)';
+            });
+            
+            button.addEventListener('mouseleave', function() {
+                this.parentElement.parentElement.style.transform = 'translateY(0)';
+            });
+        });
+    </script>
+</body>
+</html>
